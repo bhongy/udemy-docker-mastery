@@ -1,4 +1,4 @@
-## Docker Container commands
+## Docker Container
 
 ```bash
 # use nginx image as an example
@@ -46,7 +46,7 @@ Alpine does not contain bash, use `sh` instead.
 docker pull alpine
 ```
 
-## Docker Network commands
+## Docker Network
 
 - a container can be on multiple networks
 - a container on the same network can see and refer to each other by name (container name)
@@ -68,4 +68,16 @@ docker network disconnect <network_name> <container_name>
 docker container run  ... --network <network_name> ...
 
 docker container run ... --network-alias
+```
+
+# Docker Image
+
+- an image is an app binary and dependencies together with metadata how to run it
+- inside an image, no os or kernel (host provides it) just binaries
+
+```bash
+docker image ls
+docker image rm <name>
+docker image history <name>
+docker image inspect <name>
 ```
