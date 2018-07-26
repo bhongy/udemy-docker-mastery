@@ -4,7 +4,7 @@
 # use nginx image as an example
 docker container run --publish 80:80 nginx
 
-# `--publish`: publish (map) container port to the host
+# `--publish`: publish (map) container port to the host `<container>:<host>`
 # `--name`: give container a name (basically slug, id)
 # `--detach`: run container in the background
 # `--env FOO=bar`: provide environment variable
