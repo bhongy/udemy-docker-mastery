@@ -70,7 +70,7 @@ docker container run  ... --network <network_name> ...
 docker container run ... --network-alias
 ```
 
-# Docker Image
+## Docker Image
 
 - an image is an app binary and dependencies together with metadata how to run it
 - inside an image, no os or kernel (host provides it) just binaries
@@ -80,4 +80,33 @@ docker image ls
 docker image rm <name>
 docker image history <name>
 docker image inspect <name>
+
+# create a new tag based on an image
+# can also be used to "rename" local tag to be suitable to push to image registry
+docker image tag <source_image[:tag]> <target_image[:tag]>
+
+docker image push <image_name[:tag]>
+docker image pull <image_name[:tag]>
+
+# create a new image from a Dockerfile
+# `-t` tag image with image_name[:tag]
+# `.` path: uses the Dockerfile in this directory
+docker image build -t <image_name[:tag]> .
 ```
+
+## Dockerfile
+
+- use `-f` to use a different docker filename than the default `Dockerfile`
+- each command creates a new layer
+- keep layers that change least often at the top and layers that change most often at the bottom
+- `FROM` is required. Denote source image to extend. Target image will not inherit `ENV` from the source image.
+- `ENV` key-value environment variables
+- `RUN` should use commands chaining `&&` if you don't want to create a separate layer
+- `WORKDIR` change directory like doing `cd` but it's a good practice to use this rather than `RUN cd ...`
+- `COPY` just copy file from the cwd in host to the cwd in the container
+- `CMD`, final command that will be run anytime the container is started
+- Dockerfile builder reference: https://docs.docker.com/engine/reference/builder/
+
+## Misc Notes
+
+- one machine (or VM) one docker daemon (share ports) multiple containers
