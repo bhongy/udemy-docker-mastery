@@ -96,6 +96,7 @@ docker image build -t <image_name[:tag]> .
 
 ## Dockerfile
 
+- remember: Dockerfile is for creating "images"
 - use `-f` to use a different docker filename than the default `Dockerfile`
 - each command creates a new layer
 - keep layers that change least often at the top and layers that change most often at the bottom
@@ -106,6 +107,38 @@ docker image build -t <image_name[:tag]> .
 - `COPY` just copy file from the cwd in host to the cwd in the container
 - `CMD`, final command that will be run anytime the container is started
 - Dockerfile builder reference: https://docs.docker.com/engine/reference/builder/
+
+## Persistent Data
+
+- you can mount code into the container from host while editing it so you can run the code in the container, live
+
+### Volume
+
+- creates volume outside container union file-system
+- is persisted after container removal (needs manual deletion)
+- is not shared across containers
+- inspect with `docker container inspect <container_name>`
+- in Dockerfile: `VOLUME /path/to/volume` (creates or use existing)
+
+```bash
+docker volume prune # clean up
+# starts the container with named volume
+docker container run ... -v <volume_name:/path/to/volume_in_container> ...
+docker volume create
+```
+
+### Bind Mount
+
+- link host directorys/files to the container
+- is not part of container union file-system (won't change layer)
+- cannot be used in Dockerfile, must be at `docker container run`
+- creating, editing, removing file inside the container _will_ affect the host
+
+```bash
+# bind mount, can use `$(pwd)` <- standard shell stuff like:
+# `-v $(pwd)/file.ext:/path/container/file.ext`
+docker container run ... -v </path/on/host:/path/container>
+```
 
 ## Misc Notes
 
