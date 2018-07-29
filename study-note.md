@@ -107,6 +107,12 @@ docker image build -t <image_name[:tag]> .
 - `COPY` just copy file from the cwd in host to the cwd in the container
 - `CMD`, final command that will be run anytime the container is started
 - Dockerfile builder reference: https://docs.docker.com/engine/reference/builder/
+- best practice: remove package manager cache after installing dependencies
+  - `apt-get update && apt-get install -y <package> && rm -rf /var/lib/apt/lists/*`
+  - `yarn install --pure-lockfile && yarn run prune && yarn cache clean`
+- best practice: git clone only what you need
+  - `git clone --branch <my_branch> --single-branch --depth 1 ...`
+- misc: change permission `RUN chown -R <user>:<group> in_directory`
 
 ## Persistent Data
 
@@ -138,6 +144,50 @@ docker volume create
 # bind mount, can use `$(pwd)` <- standard shell stuff like:
 # `-v $(pwd)/file.ext:/path/container/file.ext`
 docker container run ... -v </path/on/host:/path/container>
+```
+
+## Docker Compose
+
+- docker-compose cli is not meant for production
+- easy to set up dev environment (tooling), the project only needs `Dockerfile` and `docker-compose.yml` then run `docker-compose up`
+- a default network will be created and all containers in the compose file will share it by default
+- `docker-compose down` is essential for cleanup
+
+```bash
+# use -f to specify the compose file to use
+docker-compose up # set up volumes, networks and start all containers
+
+docker-compose up --build
+docker-compose build
+
+# *DANGER* use -v to remove volumes as well
+docker-compose down  # stop all containers and removed as well as volumes, networks
+```
+
+```yaml
+# https://docs.docker.com/compose/compose-file/compose-versioning/#compatibility-matrix
+version: '3.1'  # if no version is specificed then v1 is assumed. Recommend v2 minimum
+
+# a service can have multiple containers
+services:  # containers. same as docker container run
+  servicename: # a friendly name. this is also DNS name inside network
+    image: # Optional if you use build:
+    command: # Optional, replace the default CMD specified by the image
+    environment: # Optional, same as -e in docker container run
+    # `.` for volumes refer to cwd - e.g. `.:/usr/shared/data`
+    # appends `:ro` means read-only - e.g. `./package.json:/home/source/package.json:ro`
+    volumes: # Optional, same as -v in docker container run
+    ports: # expose ports
+    depends_on: # service names (in this file) that this service depends on
+    # Optional, build custom image - need to manually rebuild if it's existed
+    build:
+      context: .
+      dockerfile: service.Dockerfile
+  servicename2:
+
+volumes: # Optional, same as docker volume create
+
+networks: # Optional, same as docker network create
 ```
 
 ## Misc Notes
