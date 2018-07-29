@@ -1,0 +1,21 @@
+version: '3.1'
+services:
+  cms:
+    image: drupal:8.5
+    depends_on:
+      - db
+    ports:
+      - 8080:80
+    # can clean up the volume with `docker-compose down -v`
+    volumes:
+      - cms-data:/var/www/html
+  db:
+    image: postgres:10.4-alpine
+    # default database name and db username are "postgres"
+    environment:
+      POSTGRES_PASSWORD: £•dsv¢3-√
+
+volumes:
+  # REQUIRED, since "cms" service uses this volume
+  # can leave the part after `:`
+  cms-data:
