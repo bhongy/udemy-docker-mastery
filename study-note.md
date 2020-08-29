@@ -1,10 +1,12 @@
+# Notes
+
 ## Docker Container
 
 ```bash
 # use nginx image as an example
 docker container run --publish 80:80 nginx
 
-# `--publish`: publish (map) container port to the host `<container>:<host>`
+# `--publish`: publish (map) the host port to the container port `<host>:<container>`
 # `--name`: give container a name (basically slug, id)
 # `--detach`: run container in the background
 # `--env FOO=bar`: provide environment variable
@@ -18,8 +20,9 @@ docker container run --rm --network my_net alpine nslookup search
 docker container ls
 docker container stop <name | container_id>
 docker container logs <name | container_id>
+docker container logs -f <name | container_id>
 docker container top <name | container_id>
-# check configuration for starting container
+# check configuration how the container was started
 docker container inspect <name | container_id>
 # check how the container running (good for local machine during dev)
 docker container stats
@@ -106,7 +109,7 @@ docker image build -t <image_name[:tag]> .
 - `WORKDIR` change directory like doing `cd` but it's a good practice to use this rather than `RUN cd ...`
 - `COPY` just copy file from the cwd in host to the cwd in the container
 - `CMD`, final command that will be run anytime the container is started
-- Dockerfile builder reference: https://docs.docker.com/engine/reference/builder/
+- [Dockerfile builder reference](https://docs.docker.com/engine/reference/builder/)
 - best practice: remove package manager cache after installing dependencies
   - `apt-get update && apt-get install -y <package> && rm -rf /var/lib/apt/lists/*`
   - `yarn install --pure-lockfile && yarn run prune && yarn cache clean`
@@ -151,7 +154,7 @@ docker container run ... -v </path/on/host:/path/container>
 - docker-compose cli is not meant for production
 - easy to set up dev environment (tooling), the project only needs `Dockerfile` and `docker-compose.yml` then run `docker-compose up`
 - a default network will be created and all containers in the compose file will share it by default
-- `docker-compose down` is essential for cleanup
+- `docker-compose down` is essential for cleanup (remove container/volume/network)
 
 ```bash
 # use -f to specify the compose file to use
@@ -162,6 +165,10 @@ docker-compose build
 
 # *DANGER* use -v to remove volumes as well
 docker-compose down  # stop all containers and removed as well as volumes, networks
+
+docker-compose logs
+docker-compose ps  # list containers
+docker-compose top  # display running processes inside containers
 ```
 
 ```yaml
@@ -188,6 +195,102 @@ services:  # containers. same as docker container run
 volumes: # Optional, same as docker volume create
 
 networks: # Optional, same as docker network create
+```
+
+## Orchestration (Docker Swarm)
+
+- how to ensure containers are re-created if they fail?
+- how to replace containers without downtime (blue/green deploy)?
+
+## Docker Swarm
+
+- manager is just a worker node with permission to control the swarm
+- swarm mode is disabled by default - run `docker swarm init` to enable it
+- by default the first node in the cluster is the manager
+- by default the manager is also a worker
+
+### My Questions
+
+- how to ensure container re-created if they fail
+- how to do blud/green deploy
+- how to control/track where container get started
+- how to cross-node virtual network
+
+```bash
+docker swarm init
+docker swarm init --advertise-addr <ip_address>
+# get a token to allow a node to join as a manager
+docker swarm join-token manager
+
+docker node ls
+docker node update --role manager <node_name>
+
+# `docker container run` for cluster
+docker service create [options] <image>
+docker service create --name webserver ngixn
+docker service create <image> [command] [arguments]
+docker service create alpine ping 8.8.8.8
+docker service create --name <service_name> --network <network_name> <image>
+
+docker service ls
+# see tasks for the service
+docker service ps <service_name>
+docker service update <service_name> [options]
+docker service update <service_name> --replicas 3
+docker service scale <service_name>=<num>
+docker service rollback <service_name>
+docker service rm <service_name>
+
+# services on the same swarm overlay network can talk to each other via their service names
+docker network create --network overlay <network_name>
+```
+
+## Docker Stack
+
+```bash
+docker stack deploy [-c docker-compose-file.yml] <service_name>
+# stack deploy to the same service is an update
+
+# high-level view of services
+docker stack services <service_name>
+# lower-level of processes and nodes the services run on
+docker stack ps <service_name>
+docker stack ls
+
+# combine multiple compose files to use in production `docker stack deploy`
+docker-compose -f docker-compose.base.yml -f docker-compose.prod.yml config
+
+docker service update --image myapp:1.2.1 <service_name>
+docker service update --env-add NODE_ENV=production --publish-rm 8080
+docker service scale web=8 api=6
+```
+
+```yaml
+version: "3"
+services:
+  my_service:
+    image: nginx
+    ports:
+      - "80"
+    networks:
+      - my_frontend_network
+    deploy:
+      replicas: 2
+      placement:
+        # example for deploy constraints
+        constraints: [node.role == manager]
+    depends_on:
+      - name_of_my_other_service
+```
+
+## Health Check
+
+```bash
+docker container run \
+  # curl to local elasticsearch
+  # use `|| false` to exit 1 if fail because docker expect error code 1
+  --health-cmd="curl -f localhost:9200/_cluster/health || exit 1" \
+  elasticsearch
 ```
 
 ## Misc Notes
